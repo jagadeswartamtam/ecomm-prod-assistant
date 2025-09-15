@@ -5,7 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 
-from prod_assistant.prompt_library.prompts import PROMPT_REGISTRY, PromptType
+from prompt_library.prompts import PROMPT_REGISTRY, PromptType
 from retriever.retrieval import Retriever
 from utils.model_loader import ModelLoader
 from langgraph.checkpoint.memory import MemorySaver
