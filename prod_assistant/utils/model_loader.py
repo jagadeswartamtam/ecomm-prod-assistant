@@ -1,12 +1,23 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEmbeddings
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:  # pragma: no cover - exercised when optional dependency is absent
+    ChatGoogleGenerativeAI = None
 
-from prod_assistant.logger import GLOBAL_LOGGER as log
-from prod_assistant.exception.custom_exception import DocumentPortalException
+try:
+    from langchain_groq import ChatGroq
+except ImportError:  # pragma: no cover - exercised when optional dependency is absent
+    ChatGroq = None
+
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:  # pragma: no cover - exercised when optional dependency is absent
+    HuggingFaceEmbeddings = None
+
+import sys
 
 from prod_assistant.config.settings import settings
-import sys
+from prod_assistant.exception.custom_exception import DocumentPortalException
+from prod_assistant.logger import GLOBAL_LOGGER as log
 
 
 class ModelLoader:
@@ -23,6 +34,11 @@ class ModelLoader:
                 "Loading embedding model",
                 model=settings.embedding_model
             )
+
+            if HuggingFaceEmbeddings is None:
+                raise ImportError(
+                    "langchain-huggingface is required for embeddings. Install it with 'pip install langchain-huggingface'."
+                )
 
             return HuggingFaceEmbeddings(
                 model_name=settings.embedding_model
@@ -48,6 +64,10 @@ class ModelLoader:
             )
 
             if settings.llm_provider.lower() == "groq":
+                if ChatGroq is None:
+                    raise ImportError(
+                        "langchain-groq is required for the Groq LLM. Install it with 'pip install langchain-groq'."
+                    )
 
                 return ChatGroq(
                     model=settings.llm_model,
@@ -56,6 +76,10 @@ class ModelLoader:
                 )
 
             elif settings.llm_provider.lower() == "gemini":
+                if ChatGoogleGenerativeAI is None:
+                    raise ImportError(
+                        "langchain-google-genai is required for the Gemini LLM. Install it with 'pip install langchain-google-genai'."
+                    )
 
                 return ChatGoogleGenerativeAI(
                     model=settings.llm_model,

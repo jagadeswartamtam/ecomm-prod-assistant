@@ -1,13 +1,18 @@
-import streamlit as st
-# from data_scrapper.scrape_data import scrape_flipkart_products, save_to_csv
-# from data_ingestion.ingestion_pipeline import DataIngestion
-import os
 
+import streamlit as st
+
+from prod_assistant.etl.data_ingestion import DataIngestion
+from prod_assistant.etl.data_scrapper import FlipkartScraper
+from prod_assistant.logger import GLOBAL_LOGGER as log
+
+flipkart_scraper = FlipkartScraper()
 output_path = "data/product_reviews.csv"
 st.title("📦 Product Review Scraper")
 
-if "product_inputs" not in st.session_state:    
+if "product_inputs" not in st.session_state:
     st.session_state.product_inputs = [""]
+
+log.info("Loaded scraper UI")
 
 def add_product_input():
     st.session_state.product_inputs.append("")
@@ -34,30 +39,53 @@ if st.button("🚀 Start Scraping"):
 
     if not product_inputs:
         st.warning("⚠️ Please enter at least one product name or a product description.")
+        log.warning("No product inputs supplied by the user")
     else:
         final_data = []
+        log.info("Starting new scrape batch", queries=product_inputs, max_products=max_products, review_count=review_count)
         for query in product_inputs:
-            st.write(f"🔍 Searching for: {query}")
-            results = scrape_flipkart_products(query, max_products=max_products, review_count=review_count)
-            final_data.extend(results)
+            try:
+                st.write(f"🔍 Searching for: {query}")
+                log.info("Scraping query", query=query)
+
+                results = flipkart_scraper.scrape_flipkart_products(
+                    query,
+                    max_products=max_products,
+                    review_count=review_count
+                )
+
+                final_data.extend(results)
+                log.info("Completed scrape query", query=query, results_count=len(results))
+
+            except Exception as e:
+                st.error(f"Error while scraping {query}")
+                st.exception(e)
+                log.error("UI scrape failed", query=query, error=str(e))
 
         unique_products = {}
         for row in final_data:
             if row[1] not in unique_products:
                 unique_products[row[1]] = row
-        # final_data = list(unique_products.values())
-
-        # save_to_csv(final_data, output_path)
 
         final_data = list(unique_products.values())
-        st.session_state["scraped_data"] = final_data  # ✅ store in session
-        save_to_csv(final_data, output_path)
+        st.session_state["scraped_data"] = final_data
+        log.info("Deduplicated scrape results", result_count=len(final_data))
+        flipkart_scraper.save_to_csv(final_data, output_path)
+
+        with open(output_path, "rb") as fh:
+            csv_bytes = fh.read()
+
         st.success("✅ Data saved to `data/product_reviews.csv`")
-        st.download_button("💾 Download CSV", data=open(output_path, "rb"), file_name="product_reviews.csv")
+        st.download_button(
+            "📥 Download CSV",
+            data=csv_bytes,
+            file_name="product_reviews.csv",
+            mime="text/csv",
+        )
 
 # This stays OUTSIDE "if st.button('Start Scraping')"
 if "scraped_data" in st.session_state and st.button("🧠 Store in Vector DB (AstraDB)"):
-    with st.spinner("🚀 Initializing ingestion pipeline..."):
+    with st.spinner("📡 Initializing ingestion pipeline..."):
         try:
             ingestion = DataIngestion()
             st.info("🚀 Running ingestion pipeline...")

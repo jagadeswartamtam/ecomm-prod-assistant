@@ -57,6 +57,11 @@ class Settings(BaseSettings):
 
     # PostgreSQL + pgvector
     database_url: Optional[str] = Field(None, validation_alias="DATABASE_URL")
+    
+    db_api_endpoint: Optional[str] = Field(None, validation_alias="ASTRA_DB_API_ENDPOINT")
+    db_application_token: Optional[str] = Field(None, validation_alias="ASTRA_DB_APPLICATION_TOKEN")
+    db_keyspace: Optional[str] = Field(None, validation_alias="ASTRA_DB_KEYSPACE")
+    astra_db: Optional[str] = Field(None, validation_alias="astra_db")
 
     # Redis Cache Settings
     redis_url: Optional[str] = Field(None, validation_alias="REDIS_URL")
