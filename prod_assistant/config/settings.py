@@ -69,6 +69,8 @@ class Settings(BaseSettings):
     # Embedding dimensions — must match the model used
     # text-embedding-004 (Gemini) = 768 | text-embedding-ada-002 (OpenAI) = 1536
     embedding_dimensions: int = Field(384, validation_alias="EMBEDDING_DIMENSIONS")
+    top_k:int=Field(None, validation_alias="top_k")
+    collection_name: Optional[str] = Field(None, validation_alias="astra_db" )
 
     @property
     def is_development(self) -> bool:
