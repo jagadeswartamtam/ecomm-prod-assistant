@@ -1,16 +1,21 @@
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from evaluation.deepeval_model import GroqEvaluatorModel
 
-from prompt_library.prompts import PROMPT_REGISTRY, PromptType
-from retriever.retrieval import Retriever
-from utils.model_loader import ModelLoader
+
+from prod_assistant.evaluation.deepeval_model import GroqEvaluatorModel
+from prod_assistant.prompt_library.prompts import PROMPT_REGISTRY, PromptType
+from prod_assistant.retriever.retrieval import Retriever
+from prod_assistant.utils.model_loader import ModelLoader
+
+
+
 from deepeval.metrics import (
     ContextualPrecisionMetric,
     AnswerRelevancyMetric
 )
 from deepeval.test_case import LLMTestCase
+from deepeval import evaluate
 
 retriever_obj = Retriever()
 
@@ -78,7 +83,7 @@ def invoke_chain(query: str, debug: bool = False):
 
 
 if __name__=='__main__':
-    user_query = "Can you suggest good budget iPhone under 1,00,000 INR?"
+    user_query = "Can you suggest good budget Samsung under 1,00,000 INR?"
      
     #retriever_obj = Retriever()
     
@@ -103,6 +108,14 @@ if __name__=='__main__':
     # retrieved_contexts = [_format_docs(doc) for doc in retrieved_docs]
     
     retrieved_contexts,response = invoke_chain(user_query)
+    expected_output = """
+    Recommended budget samsung under ₹1,00,000 include:
+    - Samsung Galaxy S23
+    - Samsung Galaxy A50
+    
+
+    These models offer good performance, camera quality, and software support while staying within the specified budget.
+    """
     
     #this is not an actual output this have been written to test the pipeline
     #response="iphone 16 plus, iphone 16, iphone 15 are best phones under 1,00,000 INR."
@@ -110,8 +123,10 @@ if __name__=='__main__':
     test_case = LLMTestCase(
     input=user_query,
     actual_output=response,
+    expected_output=expected_output,
     retrieval_context=retrieved_contexts
     )
+    
     context_metric = ContextualPrecisionMetric(model=groq_model)
     relevancy_metric = AnswerRelevancyMetric(model=groq_model)
     evaluate(

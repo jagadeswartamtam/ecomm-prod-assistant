@@ -33,6 +33,9 @@ lxml==6.1.1
 pydantic-settings==2.14.2
 pydantic==2.13.4
 
+langchain-mcp-adapters
+mcp
+
 -e .
 
 
