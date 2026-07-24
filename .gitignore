@@ -35,3 +35,4 @@ archive/
 .deepeval/
 review_page.html
 .pytest_cache
+data/*.csv
