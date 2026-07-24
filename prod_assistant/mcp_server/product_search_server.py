@@ -1,5 +1,5 @@
 from mcp.server.fastmcp import FastMCP
-from retriever.retrieval import Retriever  
+from prod_assistant.retriever.retrieval import Retriever  
 from langchain_community.tools import DuckDuckGoSearchRun
 
 # Initialize MCP server
@@ -27,6 +27,7 @@ def format_docs(docs) -> str:
             f"Reviews:\n{d.page_content.strip()}"
         )
         formatted_chunks.append(formatted)
+    
     return "\n\n---\n\n".join(formatted_chunks)
 
 # ---------- MCP Tools ----------
@@ -53,4 +54,4 @@ async def web_search(query: str) -> str:
 # ---------- Run Server ----------
 if __name__ == "__main__":
     #mcp.run(transport="stdio")
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="stdio")
