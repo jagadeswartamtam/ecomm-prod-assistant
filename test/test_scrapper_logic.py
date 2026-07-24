@@ -42,3 +42,18 @@ def test_clean_review_text_removes_pipe_delimited_header():
 
     assert "Overall Camera Battery Display Design Performance Build Quality Value for Money" not in cleaned
     assert "I just loving this phone" in cleaned
+
+
+def test_extract_rating_from_page_prefers_structured_rating_metadata_over_generic_decimal():
+    scraper = FlipkartScraper(output_dir="data")
+    html = """
+    <html><body>
+      <div class="_3LWZlK">1.2</div>
+      <meta itemprop="ratingValue" content="4.6" />
+      <meta itemprop="reviewCount" content="1234" />
+    </body></html>
+    """
+
+    rating = scraper._extract_rating_from_page(html)
+
+    assert rating == "4.6"

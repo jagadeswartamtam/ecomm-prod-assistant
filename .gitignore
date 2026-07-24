@@ -34,3 +34,4 @@ archive/
 .vscode/
 .deepeval/
 review_page.html
+.pytest_cache

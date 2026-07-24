@@ -214,19 +214,51 @@ class FlipkartScraper:
     @staticmethod
     def _extract_rating_from_page(page_source):
         soup = BeautifulSoup(page_source, "html.parser")
+
+        for selector in [
+            "meta[itemprop='ratingValue']",
+            "meta[name='ratingValue']",
+            "meta[property='ratingValue']",
+            "meta[itemprop='aggregateRating']",
+        ]:
+            element = soup.select_one(selector)
+            if not element:
+                continue
+            value = element.get("content") or element.get("value") or ""
+            m = re.search(r"([0-9]+(?:\.[0-9]+)?)", value)
+            if m:
+                rating = m.group(1)
+                if 0 < float(rating) <= 5:
+                    return rating
+
+        for pattern in [
+            r'"ratingValue"\s*:\s*"([0-9]+(?:\.[0-9]+)?)"',
+            r'"aggregateRating"\s*:\s*\{[^{}]*"ratingValue"\s*:\s*"([0-9]+(?:\.[0-9]+)?)"',
+            r'itemprop="ratingValue"[^>]*content="([0-9]+(?:\.[0-9]+)?)"',
+        ]:
+            m = re.search(pattern, page_source, re.I | re.S)
+            if m:
+                rating = m.group(1)
+                if 0 < float(rating) <= 5:
+                    return rating
+
         for selector in ["div._3LWZlK", "span.W1Z989", "div.XQD2XT", "div._2d4LTz", "div._3LWZlK"]:
             elements = soup.select(selector)
             if elements:
                 text = elements[0].get_text(" ", strip=True)
                 if text:
-                    m = re.search(r"\d+\.\d+", text)
+                    m = re.search(r"\b([0-9]+(?:\.[0-9]+)?)\b", text)
                     if m:
-                        return m.group(0)
+                        rating = m.group(1)
+                        if 0 < float(rating) <= 5:
+                            return rating
 
-        for pattern in [r'\b([0-9]\.[0-9])\b', r'\b([0-9])\s*out of\s*5\b']:
+        for pattern in [r'\b([0-9]\.[0-9])\b', r'\b([1-5])\s*out of\s*5\b']:
             m = re.search(pattern, page_source, re.I | re.S)
             if m:
-                return m.group(1)
+                rating = m.group(1)
+                if 0 < float(rating) <= 5:
+                    return rating
 
         return "N/A"
 
