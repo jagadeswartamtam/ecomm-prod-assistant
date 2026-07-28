@@ -1,16 +1,32 @@
+from typing import Optional
+
 from mcp.server.fastmcp import FastMCP
-from prod_assistant.retriever.retrieval import Retriever  
+from prod_assistant.retriever.retrieval import Retriever
 from langchain_community.tools import DuckDuckGoSearchRun
 
 # Initialize MCP server
 mcp = FastMCP("hybrid_search")
 
-# Load retriever once
-retriever_obj = Retriever()
-retriever = retriever_obj.load_retriever()
+# Defer heavy initialization until the tool is actually used.
+retriever_obj: Optional[Retriever] = None
+retriever = None
+duckduckgo = None
 
-# LangChain DuckDuckGo tool
-duckduckgo = DuckDuckGoSearchRun()
+
+def _get_retriever():
+    global retriever_obj, retriever
+    if retriever is None:
+        if retriever_obj is None:
+            retriever_obj = Retriever()
+        retriever = retriever_obj.load_retriever()
+    return retriever
+
+
+def _get_duckduckgo():
+    global duckduckgo
+    if duckduckgo is None:
+        duckduckgo = DuckDuckGoSearchRun()
+    return duckduckgo
 
 # ---------- Helpers ----------
 def format_docs(docs) -> str:
@@ -35,7 +51,7 @@ def format_docs(docs) -> str:
 async def get_product_info(query: str) -> str:
     """Retrieve product information for a given query from local retriever."""
     try:
-        docs = retriever.invoke(query)
+        docs = _get_retriever().invoke(query)
         context = format_docs(docs)
         if not context.strip():
             return "No local results found."
@@ -47,11 +63,10 @@ async def get_product_info(query: str) -> str:
 async def web_search(query: str) -> str:
     """Search the web using DuckDuckGo if retriever has no results."""
     try:
-        return duckduckgo.run(query)
+        return _get_duckduckgo().run(query)
     except Exception as e:
         return f"Error during web search: {str(e)}"
 
 # ---------- Run Server ----------
 if __name__ == "__main__":
-    #mcp.run(transport="stdio")
-    mcp.run(transport="stdio")
+    mcp.run(transport="streamable-http")

@@ -23,7 +23,7 @@ async def main():
     # --- Step 1: Try retriever first ---
     #query = "Samsung Galaxy S25 price"
     # query = "iPhone 15"
-    query = "what is the price of one plus 11r"
+    query = "what is the price of iPhone 16  "
     retriever_result = await retriever_tool.ainvoke({"query": query})
     # print("\nRetriever Result:\n", retriever_result)
     response_text = retriever_result[0]["text"]

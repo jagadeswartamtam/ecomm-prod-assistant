@@ -1,0 +1,76 @@
+
+env
+logs/
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+# Virtual environment
+env/
+venv/
+
+# IDE/editor settings
+.vscode/
+.idea/
+
+# Environment files
+
+
+
+# Logs
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+archive/
+
+.vscode/
+.deepeval/
+review_page.html
+.pytest_cache
+data/*.csv
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.eggs/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints
+notebook/.ipynb_checkpoints
+
+# Logs & temp
+logs/
+*.log
+*.out
+*.tmp
+*.bak
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Build / Dist
+build/
+dist/
+*.egg-info/
+.eggs/

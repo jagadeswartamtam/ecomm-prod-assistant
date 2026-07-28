@@ -6,9 +6,9 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.memory import MemorySaver
 
-from prompt_library.prompts import PROMPT_REGISTRY, PromptType
-from retriever.retrieval import Retriever
-from utils.model_loader import ModelLoader
+from prod_assistant.prompt_library.prompts import PROMPT_REGISTRY, PromptType
+from prod_assistant.retriever.retrieval import Retriever
+from prod_assistant.utils.model_loader import ModelLoader
 from deepeval.metrics import (
     ContextualPrecisionMetric,
     AnswerRelevancyMetric
@@ -22,6 +22,7 @@ class AgenticRAG:
 
     class AgentState(TypedDict):
         messages: Annotated[Sequence[BaseMessage], add_messages]
+        
 
     # ---------- Initialization ----------
     def __init__(self):
@@ -35,7 +36,7 @@ class AgenticRAG:
             {
                 "hybrid_search": {
                     "transport": "streamable_http",
-                    "url": "http://localhost:8000/mcp"
+                    "url": "http://127.0.0.1:8000/mcp"
                 }
             }
         )
@@ -43,13 +44,14 @@ class AgenticRAG:
         # Build workflow
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile(checkpointer=self.checkpointer)
+        self.mcp_tools = []
 
         # Load MCP tools asynchronously
-        asyncio.run(self._safe_async_init())
+        # asyncio.run(self._safe_async_init())
 
     async def async_init(self):
         """Load MCP tools asynchronously."""
-        self.mcp_tools = await self.mcp_client.get_tools()
+        await self._safe_async_init()
 
     async def _safe_async_init(self):
         """Safe async init wrapper (prevents event loop crash)."""
@@ -78,11 +80,11 @@ class AgenticRAG:
 
     async def _vector_retriever(self, state: AgentState):
         print("--- RETRIEVER (MCP) ---")
-        query = state["messages"][-1].content
+        query = state["messages"][0].content
 
         tool = next((t for t in self.mcp_tools if t.name == "get_product_info"), None)
         if not tool:
-            return {"messages": [HumanMessage(content="Retriever tool not found in MCP client.")]}
+            return {"messages": [HumanMessage(content="Retriever tool is unavailable because the MCP server could not be initialized.")]}
 
         try:
             result = await tool.ainvoke({"query": query})
@@ -95,8 +97,11 @@ class AgenticRAG:
     async def _web_search(self, state: AgentState):
         print("--- WEB SEARCH (MCP) ---")
         query = state["messages"][-1].content
-        tool = next(t for t in self.mcp_tools if t.name == "web_search")
-        result = await tool.ainvoke({"query": query})  # ✅
+        tool = next((t for t in self.mcp_tools if t.name == "web_search"), None)
+        if not tool:
+            return {"messages": [HumanMessage(content="Web search tool is unavailable because the MCP server could not be initialized.")]}
+
+        result = await tool.ainvoke({"query": query})
         context = result if result else "No data from web"
         return {"messages": [HumanMessage(content=context)]}
 
@@ -119,6 +124,7 @@ class AgenticRAG:
         print("--- GENERATE ---")
         question = state["messages"][0].content
         docs = state["messages"][-1].content
+        
 
         prompt = ChatPromptTemplate.from_template(
             PROMPT_REGISTRY[PromptType.PRODUCT_BOT].template
@@ -129,6 +135,7 @@ class AgenticRAG:
             response = chain.invoke({"context": docs, "question": question}) or "No response generated."
         except Exception as e:
             response = f"Error generating response: {e}"
+        
 
         return {"messages": [HumanMessage(content=response)]}
 
@@ -186,7 +193,22 @@ class AgenticRAG:
         return result["messages"][-1].content
 
 # ---------- Standalone Test ----------
-if __name__ == "__main__":
+# if __name__ == "__main__":
+#     rag_agent = AgenticRAG()
+#     answer = rag_agent.run("What is the price of iPhone 16?")
+#     print("\nFinal Answer:\n", answer)
+async def main():
     rag_agent = AgenticRAG()
-    answer = rag_agent.run("What is the price of iPhone 16?")
+
+    # Initialize MCP tools asynchronously
+    await rag_agent.async_init()
+
+    answer = await rag_agent.run(
+        "What are the reviews of the Samsung Galaxy A50?"
+    )
+
     print("\nFinal Answer:\n", answer)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
