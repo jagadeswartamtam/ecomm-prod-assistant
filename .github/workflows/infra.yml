@@ -19,6 +19,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Delete failed stack if it exists (CREATE_FAILED / ROLLBACK_COMPLETE can't be updated)
+      - name: Delete failed stack if exists
+        run: |
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name prod-assistant-eks \
+            --region ${{ secrets.AWS_REGION }} \
+            --query "Stacks[0].StackStatus" \
+            --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+
+          echo "Current stack status: $STACK_STATUS"
+
+          if [[ "$STACK_STATUS" == *"FAILED"* || "$STACK_STATUS" == "ROLLBACK_COMPLETE" ]]; then
+            echo "Stack is in an unrecoverable state ($STACK_STATUS). Deleting..."
+            aws cloudformation delete-stack \
+              --stack-name prod-assistant-eks \
+              --region ${{ secrets.AWS_REGION }}
+            aws cloudformation wait stack-delete-complete \
+              --stack-name prod-assistant-eks \
+              --region ${{ secrets.AWS_REGION }}
+            echo "Stack deleted successfully."
+          else
+            echo "Stack is in state '$STACK_STATUS' — no deletion needed."
+          fi
+
       # Deploy CloudFormation Stack
       - name: Deploy CloudFormation Stack
         run: |
@@ -26,4 +50,4 @@ jobs:
             --stack-name prod-assistant-eks \
             --template-file infra/eks-with-ecr.yaml \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ secrets.AWS_REGION }}
