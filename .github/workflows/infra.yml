@@ -50,4 +50,16 @@ jobs:
             --stack-name prod-assistant-eks \
             --template-file infra/eks-with-ecr.yaml \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ secrets.AWS_REGION }}
+
+      # Print stack events on failure for diagnosis
+      - name: Show stack failure events
+        if: failure()
+        run: |
+          echo "=== CloudFormation Stack Events (last 20) ==="
+          aws cloudformation describe-stack-events \
+            --stack-name prod-assistant-eks \
+            --region ${{ secrets.AWS_REGION }} \
+            --query "StackEvents[?ResourceStatus=='CREATE_FAILED' || ResourceStatus=='UPDATE_FAILED'].[LogicalResourceId,ResourceType,ResourceStatusReason]" \
+            --output table
+

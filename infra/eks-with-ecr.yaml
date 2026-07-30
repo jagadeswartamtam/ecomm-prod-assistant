@@ -23,7 +23,7 @@ Resources:
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
-    Properties:   
+    Properties:
       Tags:
         - Key: Name
           Value: EKS-IGW
@@ -56,6 +56,29 @@ Resources:
         - Key: Name
           Value: PublicSubnet2
 
+  ### --- Private Subnets for Fargate (required) ---
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.4.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet2
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -84,6 +107,49 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
+  ### --- NAT Gateway for Private Subnets ---
+  EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: AttachGateway
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: EKS-NAT
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: PrivateRouteTable
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
+
   ### --- Security Group for EKS ---
   EKSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -98,7 +164,6 @@ Resources:
           CidrIp: 0.0.0.0/0
 
   ### --- ECR Repository ---
-
   ProductAssistantECR:
     Type: AWS::ECR::Repository
     Properties:
@@ -129,8 +194,8 @@ Resources:
       RoleArn: !GetAtt EKSClusterRole.Arn
       ResourcesVpcConfig:
         SubnetIds:
-          - !Ref PublicSubnet1
-          - !Ref PublicSubnet2
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2
         SecurityGroupIds:
           - !Ref EKSSecurityGroup
 
@@ -156,12 +221,11 @@ Resources:
       ClusterName: !Ref ClusterName
       FargatePodExecutionRoleArn: !GetAtt FargateExecutionRole.Arn
       Subnets:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
       Selectors:
         - Namespace: default
         - Namespace: kube-system
-
 
 Outputs:
   ECRRepositoryUri:
