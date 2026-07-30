@@ -1,16 +1,10 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Standalone EKS Cluster with NodeGroup and ECR Repository
+Description: Standalone EKS Cluster with Fargate Profile and ECR Repository
 
 Parameters:
   ClusterName:
     Type: String
     Default: prod-assistant-eks
-  NodeInstanceType:
-    Type: String
-    Default: t3.micro
-  DesiredCapacity:
-    Type: Number
-    Default: 1
   ECRRepositoryName:
     Type: String
     Default: prod_assistant
@@ -140,8 +134,8 @@ Resources:
         SecurityGroupIds:
           - !Ref EKSSecurityGroup
 
-  ### --- IAM Role for NodeGroup ---
-  NodeGroupRole:
+  ### --- IAM Role for Fargate ---
+  FargateExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -149,29 +143,24 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: ec2.amazonaws.com
+              Service: eks-fargate-pods.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy
 
-    ### --- EKS NodeGroup ---
-  NodeGroup:
-    Type: AWS::EKS::Nodegroup
-    DependsOn: EKSCluster   # ensures cluster is ready
+  ### --- EKS Fargate Profile ---
+  FargateProfile:
+    Type: AWS::EKS::FargateProfile
+    DependsOn: EKSCluster
     Properties:
       ClusterName: !Ref ClusterName
-      NodeRole: !GetAtt NodeGroupRole.Arn
+      FargatePodExecutionRoleArn: !GetAtt FargateExecutionRole.Arn
       Subnets:
         - !Ref PublicSubnet1
         - !Ref PublicSubnet2
-      ScalingConfig:
-        DesiredSize: !Ref DesiredCapacity
-        MaxSize: 3
-        MinSize: 1
-      InstanceTypes:
-        - !Ref NodeInstanceType
+      Selectors:
+        - Namespace: default
+        - Namespace: kube-system
 
 
 Outputs:
