@@ -29,7 +29,7 @@ Resources:
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
-    Properties:
+    Properties:   
       Tags:
         - Key: Name
           Value: EKS-IGW

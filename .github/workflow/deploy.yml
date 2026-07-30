@@ -70,7 +70,7 @@ jobs:
         run: |
           echo "Region: ${{ secrets.AWS_REGION }}"
           echo "Cluster: ${{ secrets.EKS_CLUSTER_NAME }}"  
-      
+         
       # Update kubeconfig
       - name: Update kubeconfig with debug
         run: |
