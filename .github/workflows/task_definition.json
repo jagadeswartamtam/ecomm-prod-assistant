@@ -1,0 +1,59 @@
+{
+  "family": "prod-assistanttd",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::700890257528:role/ecsTaskExecutionRole",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "8192",
+  "containerDefinitions": [
+    {
+      "name": "prod-assistant",
+      "image": "700890257528.dkr.ecr.us-east-1.amazonaws.com/prod-assistant",
+      "cpu": 1024,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8081,
+          "hostPort": 8081,
+          "protocol": "tcp",
+          "name": "prod-assistant--8081-tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "environment": [
+        {
+          "name": "ENV",
+          "value": "production"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "GROQ_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:700890257528:secret:apikey-0C7LA"
+        },
+        {
+          "name": "ASTRA_DB_API_ENDPOINT",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:700890257528:secret:prod-assistant/astradb-8HL7z1:ASTRA_DB_API_ENDPOINT::"
+        },
+        {
+          "name": "ASTRA_DB_APPLICATION_TOKEN",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:700890257528:secret:prod-assistant/astradb-8HL7z1:ASTRA_DB_APPLICATION_TOKEN::"
+        },
+        {
+          "name": "ASTRA_DB_KEYSPACE",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:700890257528:secret:prod-assistant/astradb-8HL7z1:ASTRA_DB_KEYSPACE::"
+        }
+        
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/prod-assistanttd",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}
