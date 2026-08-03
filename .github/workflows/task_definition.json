@@ -29,7 +29,7 @@
       "secrets": [
         {
           "name": "GROQ_API_KEY",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:700890257528:secret:apikey-0C7LA"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:700890257528:secret:apikey-0C7LAE"
         },
         {
           "name": "ASTRA_DB_API_ENDPOINT",
