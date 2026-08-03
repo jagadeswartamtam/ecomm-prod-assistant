@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # Application Settings
     app_name: str = Field(" Agentic RAG Application", validation_alias="APP_NAME")
-    app_env: str = Field("development", validation_alias="APP_ENV")
+    app_env: str = Field("production", validation_alias="APP_ENV")
     app_debug: bool = Field(True, validation_alias="APP_DEBUG")
 
     # LLM Settings
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     db_api_endpoint: Optional[str] = Field(None, validation_alias="ASTRA_DB_API_ENDPOINT")
     db_application_token: Optional[str] = Field(None, validation_alias="ASTRA_DB_APPLICATION_TOKEN")
     db_keyspace: Optional[str] = Field(None, validation_alias="ASTRA_DB_KEYSPACE")
-    astra_db: Optional[str] = Field(None, validation_alias="astra_db")
+    astra_db: str = Field("ecommdata", validation_alias="astra_db")
 
     # Redis Cache Settings
     redis_url: Optional[str] = Field(None, validation_alias="REDIS_URL")
@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     # Embedding dimensions — must match the model used
     # text-embedding-004 (Gemini) = 768 | text-embedding-ada-002 (OpenAI) = 1536
     embedding_dimensions: int = Field(384, validation_alias="EMBEDDING_DIMENSIONS")
-    top_k:int=Field(None, validation_alias="top_k")
+    top_k:int=Field(3, validation_alias="top_k")
     collection_name: Optional[str] = Field(None, validation_alias="astra_db" )
 
     @property
